@@ -35,6 +35,11 @@ events {
     use                 epoll;
 }
 
+# Begin-Patch: 环境变量
+env OIDC_SESSIONS;
+# End-Patch
+
+
 http {
     {{ if not $all.DisableLua }}
     lua_package_cpath "/usr/local/lib/lua/?.so;/usr/lib/x86_64-linux-gnu/lua/5.1/?.so;;";
@@ -48,6 +53,12 @@ http {
 
         local lua_resty_waf = require("resty.waf")
         lua_resty_waf.init()
+
+        -- Begin-Patch: 初始化 sessions 配置
+        local cjson = require("cjson")
+        oidc_sessions = cjson.decode(os.getenv("OIDC_SESSIONS"))
+        -- End-Patch
+        
 
         {{ if $all.DynamicConfigurationEnabled }}
         -- init modules
@@ -436,10 +447,6 @@ http {
     {{ range $zone := (buildRateLimitZones $servers) }}
     {{ $zone }}
     {{ end }}
-
-    # Begin-Patch: 包含自动生成的配置
-    include /etc/oidc-auth.http;
-    # End-Patch
 
     {{/* Build server redirects (from/to www) */}}
     {{ range $hostname, $to := .RedirectServers }}
