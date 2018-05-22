@@ -47,6 +47,12 @@ http {
 
     {{ buildLuaSharedDictionaries $servers $all.DynamicConfigurationEnabled $all.Cfg.DisableLuaRestyWAF }}
 
+    # Begin-Patch: 配置 lua-openidc 缓存及 ssl 
+    lua_shared_dict discovery 1m;
+    lua_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+    lua_ssl_verify_depth 5;
+    # End-Patch
+
     init_by_lua_block {
         require("resty.core")
         collectgarbage("collect")

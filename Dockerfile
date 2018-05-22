@@ -13,6 +13,7 @@ RUN mkdir /build && cd /build && \
  curl -sSL 'https://npc.nos-eastchina1.126.net/dl/jwks2pem.tar.gz' | tar -zx -C /usr/bin && \
  rm -rf /build && mv /nginx-ingress-controller /nginx-ingress-controller.original
 
+ADD evp_openssl11-patch.lua /usr/local/lib/lua/resty/evp.lua
 ADD nginx_0.15.0.tmpl /etc/nginx/template/nginx.tmpl
 ADD nginx-ingress-controller.sh /nginx-ingress-controller
 RUN chmod 0755 /nginx-ingress-controller
