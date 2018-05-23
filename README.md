@@ -208,13 +208,13 @@ spec:
 
 # Dev/Test
 ```
-docker build -t kube-oidc-ingress-controller:test . && \
+docker build -t oidc-ingress-controller:test . && \
 docker run -it --rm -v $HOME:/root --network host \
     -e POD_NAME=default -e POD_NAMESPACE=default \
     -e OIDC_ISSUER='https://xxxxxxxxxxxxxxxxxxxxx' \
     -e OIDC_CLIENT_ID=xxxxxxxxxxxxxx \
     -e OIDC_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx \
-    kube-oidc-ingress-controller:test /nginx-ingress-controller \
+    oidc-ingress-controller:test /nginx-ingress-controller \
         --default-backend-service=kube-system/default-http-backend \
         --configmap=kube-system/nginx-configuration \
         --annotations-prefix=nginx.ingress.kubernetes.io \
