@@ -36,7 +36,7 @@ events {
 }
 
 # Begin-Patch: 环境变量
-env OIDC_SESSIONS;
+env OIDC_CONFIGURATIONS;
 # End-Patch
 
 
@@ -62,7 +62,7 @@ http {
 
         -- Begin-Patch: 初始化 sessions 配置
         local cjson = require("cjson")
-        oidc_sessions = cjson.decode(os.getenv("OIDC_SESSIONS"))
+        oidc_configurations = cjson.decode(os.getenv("OIDC_CONFIGURATIONS"))
         -- End-Patch
         
 
