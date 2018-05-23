@@ -27,11 +27,12 @@ config_session(){
                 SESSION_REDIS SESSION_REDIS_PREFIX SESSION_REDIS_AUTH \
                 OIDC_CLIENT_ID OIDC_CLIENT_SECRET \
                 OIDC_DISCOVERY OIDC_ISSUER OIDC_PUBLIC_KEY \
-                OIDC_SCOPE OIDC_REDIRECT_PATH OIDC_LOGOUT_PATH; jq -n '{
+                OIDC_SCOPE OIDC_REDIRECT_PATH OIDC_LOGOUT_PATH OIDC_LOGOUT_REDIRECT; jq -n '{
         name: env.SESSION_NAME,
         scope: env.OIDC_SCOPE,
         redirect_path: env.OIDC_REDIRECT_PATH,
         logout_path: env.OIDC_LOGOUT_PATH,
+        logout_redirect: env.OIDC_LOGOUT_REDIRECT,
         session_secret: env.SESSION_SECRET,
         discovery: env.OIDC_DISCOVERY,
         issuer: env.OIDC_ISSUER,
