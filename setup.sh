@@ -129,7 +129,7 @@ cat<<\EOF >"$NGINX_CONFIG/$CONFIG_NAME.server"
                 if action then 
                     -- action aliases
                     action = (action == "allow" or action == "ignore" or action == "public") and "pass" or action
-                    action = (action == "block" or action == "deny") and "deny401" or action
+                    action = (action == "deny" or action == "noauth") and "no-auth" or action
                     return action 
                 end
                 local uri = ngx.var.request_uri
@@ -144,16 +144,16 @@ cat<<\EOF >"$NGINX_CONFIG/$CONFIG_NAME.server"
                         return "pass"
                     end
                 end
-                for _, pattern in ipairs(cfg["deny401_locations"] or cfg["deny_locations"] or {}) do
+                for _, pattern in ipairs(cfg["no_auth_locations"] or cfg["noauth_locations"] or {}) do
                     if uri:sub(1, string.len(pattern)) == pattern then
-                        return "deny401"
+                        return "no-auth"
                     end
                 end
                 return "auth"
             end
             
             local action = oidc_access_action()
-            local res, err, url, session = require("resty.openidc").authenticate(opts, nil, (action == "pass" or action == "deny401") and "pass")
+            local res, err, url, session = require("resty.openidc").authenticate(opts, nil, (action == "pass" or action == "no-auth") and "pass")
             if err then
                 ngx.log(ngx.ERR, err)
                 ngx.status = 500

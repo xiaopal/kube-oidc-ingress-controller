@@ -125,7 +125,7 @@ metadata:
         "id_token_refresh": true, 
         "enc_id_token" : true,
         "claim_headers": { "Authorization": "bearer_enc_id_token" },
-        "deny401_locations": ["/api"],
+        "no_auth_locations": ["/api"],
         "pass_locations": ["/assets","/static","/favicon.ico"]
         }';
 spec:
@@ -175,7 +175,7 @@ metadata:
   name: kubernetes-dashboard-api
   annotations:
     nginx.ingress.kubernetes.io/configuration-snippet: |
-      set $oidc_access_action 'deny401';
+      set $oidc_access_action 'no-auth';
 spec:
   rules:
   - host: k8s.example.local
