@@ -11,12 +11,13 @@ SESSION_REDIS_AUTH="$OIDC_SESSION_REDIS_AUTH"
 config_session(){
     local SESSION_JSON="$1"
     echo "oidc configuration: $SESSION_NAME" >&2
-    local OIDC_JWKS_PREFETCH="$OIDC_JWKS_PREFETCH"
-    local OIDC_PUBLIC_KEY="$OIDC_PUBLIC_KEY"
+    local OIDC_JWKS_PREFETCH="$OIDC_JWKS_PREFETCH" OIDC_PUBLIC_KEY="$OIDC_PUBLIC_KEY" OIDC_ISSUER="$OIDC_ISSUER" OIDC_DISCOVERY="$OIDC_DISCOVERY"
     [ ! -z "$SESSION_JSON" ] && [ -z "$OIDC_JWKS_PREFETCH" ] && OIDC_JWKS_PREFETCH="$(jq -r '.jwks_prefetch//empty' "$SESSION_JSON")"
     [ ! -z "$SESSION_JSON" ] && [ -z "$OIDC_PUBLIC_KEY" ] && OIDC_PUBLIC_KEY="$(jq -r '.public_key//empty' "$SESSION_JSON")"
+    [ ! -z "$SESSION_JSON" ] && [ -z "$OIDC_ISSUER" ] && OIDC_ISSUER="$(jq -r '.issuer//empty' "$SESSION_JSON")"
+    [ ! -z "$SESSION_JSON" ] && [ -z "$OIDC_DISCOVERY" ] && OIDC_DISCOVERY="$(jq -r '.discovery//empty' "$SESSION_JSON")"
     [ -z "$OIDC_JWKS_PREFETCH" ] || [ ! -z "$OIDC_PUBLIC_KEY" ] || {
-        local OIDC_DISCOVERY="${OIDC_DISCOVERY:-${OIDC_ISSUER:+${OIDC_ISSUER%/}/.well-known/openid-configuration}}"
+        OIDC_DISCOVERY="${OIDC_DISCOVERY:-${OIDC_ISSUER:+${OIDC_ISSUER%/}/.well-known/openid-configuration}}"
         [ ! -z "$OIDC_DISCOVERY" ] || {
             echo 'OIDC_DISCOVERY required' >&2
             return 1
