@@ -9,8 +9,12 @@ SESSION_REDIS_PREFIX="$OIDC_SESSION_REDIS_PREFIX"
 SESSION_REDIS_AUTH="$OIDC_SESSION_REDIS_AUTH"
 
 config_session(){
+    local SESSION_JSON="$1"
     echo "oidc configuration: $SESSION_NAME" >&2
+    local OIDC_JWKS_PREFETCH="$OIDC_JWKS_PREFETCH"
     local OIDC_PUBLIC_KEY="$OIDC_PUBLIC_KEY"
+    [ ! -z "$SESSION_JSON" ] && [ -z "$OIDC_JWKS_PREFETCH" ] && OIDC_JWKS_PREFETCH="$(jq -r '.jwks_prefetch//empty' "$SESSION_JSON")"
+    [ ! -z "$SESSION_JSON" ] && [ -z "$OIDC_PUBLIC_KEY" ] && OIDC_PUBLIC_KEY="$(jq -r '.public_key//empty' "$SESSION_JSON")"
     [ -z "$OIDC_JWKS_PREFETCH" ] || [ ! -z "$OIDC_PUBLIC_KEY" ] || {
         local OIDC_DISCOVERY="${OIDC_DISCOVERY:-${OIDC_ISSUER:+${OIDC_ISSUER%/}/.well-known/openid-configuration}}"
         [ ! -z "$OIDC_DISCOVERY" ] || {
@@ -27,7 +31,7 @@ config_session(){
                 SESSION_REDIS SESSION_REDIS_PREFIX SESSION_REDIS_AUTH \
                 OIDC_CLIENT_ID OIDC_CLIENT_SECRET \
                 OIDC_DISCOVERY OIDC_ISSUER OIDC_PUBLIC_KEY \
-                OIDC_SCOPE OIDC_REDIRECT_PATH OIDC_LOGOUT_PATH OIDC_LOGOUT_REDIRECT; jq -n '{
+                OIDC_SCOPE OIDC_REDIRECT_PATH OIDC_LOGOUT_PATH OIDC_LOGOUT_REDIRECT; jq -nc '{
         name: env.SESSION_NAME,
         scope: env.OIDC_SCOPE,
         redirect_path: env.OIDC_REDIRECT_PATH,
@@ -42,13 +46,21 @@ config_session(){
         session_redis: env.SESSION_REDIS,
         session_redis_auth: env.SESSION_REDIS_AUTH,
         session_redis_prefix: env.SESSION_REDIS_PREFIX
-    } | with_entries(select( .value//"" | length>0 )) | [{key: .name, value:.}] | from_entries' ) >>"$NGINX_CONFIG/$CONFIG_NAME.sessions_"
+    } | with_entries(select( .value//"" | length>0 )) 
+      | [{key: .name, value:.}] | from_entries' || exit 1
+    [ -z "$SESSION_JSON" ] || jq -c 'objects | [{key: env.SESSION_NAME, value:.}] | from_entries' "$SESSION_JSON"
+    ) >>"$NGINX_CONFIG/$CONFIG_NAME.sessions_"
 }
 
 rm -f "$NGINX_CONFIG/$CONFIG_NAME.sessions_"
 [ -z "$OIDC_CLIENT_ID" ] || config_session || exit 1
 OIDC_CONFIG_PATH="${OIDC_CONFIG_PATH:-/etc/$CONFIG_NAME}" && for CONFIG in ${OIDC_CONFIG_PATH//[ ;,:]/ }; do
-    [ -d "$CONFIG" ] && for SESSION_CONF in "${CONFIG%/}"/*.conf; do
+    [ -d "$CONFIG" ] || continue
+    for SESSION_JSON in "${CONFIG%/}"/*.json; do
+        [ -f "$SESSION_JSON" ] || continue
+        ( SESSION_NAME="${SESSION_JSON%%.*}" && SESSION_NAME="${SESSION_NAME##*/}" && config_session "$SESSION_JSON" ) || exit 1
+    done 
+    for SESSION_CONF in "${CONFIG%/}"/*.conf; do
         [ -f "$SESSION_CONF" ] || continue
         ( SESSION_NAME="${SESSION_CONF%%.*}" && SESSION_NAME="${SESSION_NAME##*/}" && . "$SESSION_CONF" && config_session ) || exit 1
     done 
@@ -76,7 +88,7 @@ cat<<\EOF >"$NGINX_CONFIG/$CONFIG_NAME.server"
         local oidc_access = ngx.var.oidc_access
         if oidc_access and oidc_access ~= "" then
             local cjson = require("cjson")
-            local decode_cfg = cjson.decode(oidc_access)
+            local decode_cfg = oidc_access:match("{.*}") and cjson.decode(oidc_access) or {name=oidc_access}
             local cfg = { name = decode_cfg and decode_cfg["name"] or "openid" }
             for k,v in pairs(oidc_configurations[cfg["name"]] or {}) do cfg[k] = v end
             for k,v in pairs(decode_cfg or {}) do cfg[k] = v end

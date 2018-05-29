@@ -25,10 +25,17 @@ data:
     # OIDC_SCOPE=xxxxxxxxxxxxx
     # SESSION_REDIS=127.0.0.1:6739
     # SESSION_REDIS_AUTH=xxxxxxxxxxxxxxx
-  grafana.conf: | # base64 encode
-    OIDC_ISSUER=https://xxxx.xxxx.xxx/connect
-    OIDC_CLIENT_ID=xxxxxxxxxxxxxxxx
-    OIDC_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxx
+  grafana.json: | # base64 encode
+    {
+      "issuer":"https://xxxx.xxxx.xxx/connect",
+      "client_id": "xxxxxxxxxxxxxxxx",
+      "client_secret": "xxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "scope":"openid email",
+      "claim_headers": {
+          "X-WEBAUTH-USER": "sub",
+          "X-WEBAUTH-EMAIL": "email"
+      }
+    }
 
 ---
 apiVersion: extensions/v1beta1
@@ -92,13 +99,7 @@ metadata:
   name: monitoring-grafana
   annotations:
     nginx.ingress.kubernetes.io/server-snippet: |
-      set $oidc_access '{
-          "name": "grafana",
-          "scope":"openid email",
-          "claim_headers": {
-              "X-WEBAUTH-USER": "sub",
-              "X-WEBAUTH-EMAIL": "email"
-		  }}';
+      set $oidc_access 'grafana';
 spec:
   rules:
   - host: monitor.k8s.example.local
