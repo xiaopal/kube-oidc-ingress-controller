@@ -77,14 +77,6 @@ cat<<EOF >"$NGINX_CONFIG/$CONFIG_NAME.http"
 EOF
 
 cat<<\EOF >"$NGINX_CONFIG/$CONFIG_NAME.server"
-    set $session_name '';
-    set $session_secret '';
-    set $session_storage '';
-    set $session_redis_host '';
-    set $session_redis_port '';
-    set $session_redis_prefix '';
-    set $session_redis_auth '';
-    set $session_redis_host '';
     access_by_lua_block {
         local oidc_access = ngx.var.oidc_access
         if oidc_access and oidc_access ~= "" then
@@ -101,21 +93,13 @@ cat<<\EOF >"$NGINX_CONFIG/$CONFIG_NAME.server"
                 ngx.status = 500
                 ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
             end
-            session_contents = {id_token=true, user=true}
+            local session_contents = {id_token=true, user=true}
             if cfg["enc_id_token"] then
                 session_contents["enc_id_token"] = true
             end
             if cfg["id_token_refresh"] then
                 session_contents["access_token"] = true
             end
-            ngx.var.session_name = cfg["name"] .. "$session"
-            ngx.var.session_secret = cfg["session_secret"] or cfg["client_secret"]
-            ngx.var.session_storage = cfg["session_redis"] and "redis" or "cookie"
-            local redis = cfg["session_redis"]
-            ngx.var.session_redis_host = redis and redis:match("([^:]+):%d+") or redis or nil
-            ngx.var.session_redis_port = redis and redis:match("[^:]+:(%d+)") or 6379
-            ngx.var.session_redis_prefix = cfg["session_redis_prefix"] or ("sessions:" .. cfg["name"])
-            ngx.var.session_redis_auth = cfg["session_redis_auth"] or nil
 
             local opts = {
                 scope = cfg["scope"] or "openid",
@@ -136,6 +120,17 @@ cat<<\EOF >"$NGINX_CONFIG/$CONFIG_NAME.server"
                     opts["id_token_refresh_interval"] = cfg["id_token_refresh_interval"]
                 end
             end
+            local redis = cfg["session_redis"]
+            local session_opts = {
+                name       = cfg["name"] .. "$session",
+                secret     = cfg["session_secret"] or cfg["client_secret"],
+                storage    = redis and "redis" or "cookie",
+
+                prefix     = cfg["session_redis_prefix"] or ("sessions:" .. cfg["name"]),
+                host       = redis and redis:match("([^:]+):%d+") or redis or "127.0.0.1",
+                port       = tonumber(redis and redis:match("[^:]+:(%d+)") or 6379),
+                auth       = cfg["session_redis_auth"] or nil
+            }
 
             local function oidc_access_action()
                 local action = ngx.var.oidc_access_action
@@ -166,7 +161,7 @@ cat<<\EOF >"$NGINX_CONFIG/$CONFIG_NAME.server"
             end
             
             local action = oidc_access_action()
-            local res, err, url, session = require("resty.openidc").authenticate(opts, nil, (action == "pass" or action == "no-auth") and "pass")
+            local res, err, url, session = require("resty.openidc").authenticate(opts, nil, (action == "pass" or action == "no-auth") and "pass", session_opts)
             if err then
                 ngx.log(ngx.ERR, err)
                 ngx.status = 500

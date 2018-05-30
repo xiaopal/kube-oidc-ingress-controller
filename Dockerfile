@@ -5,6 +5,7 @@ RUN mkdir /build && cd /build && \
  curl -sSL https://github.com/pintsized/lua-resty-http/archive/v0.12.tar.gz | tar -zx  && \
  curl -sSL https://github.com/zmartzone/lua-resty-openidc/archive/v1.5.4.tar.gz | tar -zx && \
  curl -sSL https://github.com/SkyLothar/lua-resty-jwt/releases/download/v0.1.11/lua-resty-jwt-0.1.11.tar.gz | tar -zx && \
+ curl -sSL https://github.com/openresty/lua-resty-redis/archive/v0.26.tar.gz | tar -zx && \
  cp -r */lib/resty/* /usr/local/lib/lua/resty/ && \
  # hmac.lua兼容openssl 1.1
  curl -sSL https://github.com/jkeys089/lua-resty-hmac/raw/master/lib/resty/hmac.lua  >/usr/local/lib/lua/resty/hmac.lua && \
