@@ -261,9 +261,17 @@ http {
         "https:http"     1;
     }
 
+    # Begin-Patch: 负载均衡传入 X-Forwarded-Proto 未同时传入 X-Forwarded-Port 时使用协议默认端口
+    map $http_x_forwarded_proto $pass_proto_server_port {
+        default  $server_port;
+        "https"    443;
+        "http"     80;
+    }
+    # End-Patch
+
     map $http_x_forwarded_port $pass_server_port {
         default           $http_x_forwarded_port;
-        ''                $server_port;
+        ''                $pass_proto_server_port;
     }
 
     {{ if $all.IsSSLPassthroughEnabled }}

@@ -2,6 +2,8 @@
 
 在nginx-ingress-controller基础上扩展 openid-connect 登录代理功能，支持自动刷新过期的的 id-token (通过刷新 access-token 实现)
 
+Patch 2018-06-17: 负载均衡传入 X-Forwarded-Proto 未同时传入 X-Forwarded-Port 时使用协议默认端口
+
 # Docker Image
 ```
     docker pull xiaopal/oidc-ingress-controller:0.15.0
