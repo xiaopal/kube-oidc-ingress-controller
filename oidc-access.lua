@@ -9,8 +9,11 @@ if oidc_access and oidc_access ~= "" then
     local cjson = require("cjson")
     local decode_cfg = oidc_access:match("{.*}") and cjson.decode(oidc_access) or {name=oidc_access}
     local cfg = { name = decode_cfg and decode_cfg["name"] or "openid" }
+    local oidc_access_extras = ngx.var.oidc_access_extras
+    local extras = oidc_access_extras:match("{.*}") and cjson.decode(oidc_access_extras)
     for k,v in pairs(oidc_configurations[cfg["name"]] or {}) do cfg[k] = v end
     for k,v in pairs(decode_cfg or {}) do cfg[k] = v end
+    for k,v in pairs(extras or {}) do cfg[k] = v end
     if cfg["issuer"] and not cfg["discovery"] then
         cfg["discovery"] = cfg["issuer"]:gsub("/$","") .. "/.well-known/openid-configuration"
     end
