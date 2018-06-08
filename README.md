@@ -20,13 +20,13 @@ metadata:
 type: Opaque
 data:
   kubernetes.conf: | # base64 encode
-    OIDC_ISSUER=https://xxxx.xxxx.xxx/connect
-    OIDC_CLIENT_ID=xxxxxxxxxxxxxxxx
-    OIDC_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxx
-    OIDC_JWKS_PREFETCH=Y
-    # OIDC_SCOPE=xxxxxxxxxxxxx
-    # SESSION_REDIS=127.0.0.1:6739
-    # SESSION_REDIS_AUTH=xxxxxxxxxxxxxxx
+    {
+        "ingress":"k8s.ndp2.netease.com",
+        "issuer":"https://login.netease.com/connect",
+        "client_id": "9b6d00f6699311e8a4e35cf3fc96a72c",
+        "client_secret": "176efafc250f48999f50b401d01234c29b6d089e699311e8a4e35cf3fc96a72c",
+        "jwks_prefetch": "Y"
+    }
   grafana.json: | # base64 encode
     {
       "issuer":"https://xxxx.xxxx.xxx/connect",
@@ -187,7 +187,9 @@ metadata:
         "claim_headers": { "XXXXXX": "xxx" },
         "redirect_path": "/openid-connect",
         "logout_path": "/logout",
-        "logout_redirect": "/"
+        "logout_redirect": "/",
+        "session_redis": "127.0.0.1:6739",
+        "session_redis_auth":"Password"
         }';
 spec:
   rules:
@@ -206,6 +208,9 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/configuration-snippet: |
       set $oidc_access_action 'no-auth';
+      set $oidc_access_extras '{
+        "claim_headers": { "XXXXXX": "xxx" }
+      }';
 spec:
   rules:
   - host: k8s.example.local
