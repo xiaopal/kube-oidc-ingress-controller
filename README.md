@@ -143,6 +143,33 @@ spec:
 
 ```
 
+# 配置默认值
+```
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: nginx-configuration
+  namespace: kube-system
+data:
+  http-snippet: |
+    map $http_host $oidc_access_fallback {
+      hostnames;
+      default "deny";
+      *.example.local '{
+            "issuer": "https://xxxxxxxxxxxxxx",
+            "client_id": "xxxxxxxxxxxxxx", 
+            "client_secret" : "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          }';
+      admin.example.local '{
+            "issuer": "https://xxxxxxxxxxxx",
+            "client_id": "xxxxxxxxxxxxxxxxxxxx", 
+            "client_secret" : "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          }';
+    }
+
+
+```
 
 # 更多示例
 ```

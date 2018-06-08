@@ -19,6 +19,6 @@ ADD evp_openssl11-patch.lua /usr/local/lib/lua/resty/evp.lua
 ADD openidc_v1.5.4-patch.lua /usr/local/lib/lua/resty/openidc.lua
 
 ADD nginx_0.15.0.tmpl /etc/nginx/template/nginx.tmpl
-ADD setup.sh /setup.sh
 ADD nginx-ingress-controller.sh /nginx-ingress-controller
+ADD setup.sh oidc-access.lua /
 RUN chmod 0755 /setup.sh /nginx-ingress-controller

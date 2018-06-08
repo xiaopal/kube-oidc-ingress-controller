@@ -499,8 +499,8 @@ http {
         server_name {{ $server.Hostname }} {{ $server.Alias }};
         {{ template "SERVER" serverConfig $all $server }}
 
-        # Begin-Patch: 包含自动生成的配置
-        include /etc/oidc-auth.server;
+        # Begin-Patch: 载入 oidc 检查脚本
+        access_by_lua_file /oidc-access.lua;
         # End-Patch
 
         {{ if not (empty $cfg.ServerSnippet) }}
@@ -598,6 +598,10 @@ http {
             {{ else }}
             proxy_pass          http://upstream-default-backend;
             {{ end }}
+
+            # Begin-Patch: 载入 oidc 检查脚本
+            access_by_lua_file /oidc-access.lua;
+            # End-Patch
         }
 
         {{ template "CUSTOM_ERRORS" $all }}
