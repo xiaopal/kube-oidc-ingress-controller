@@ -1,5 +1,5 @@
 local oidc_access = ngx.var.oidc_access
-oidc_access = oidc_access  and oidc_access ~= "" or ngx.var.oidc_access_fallback
+oidc_access = oidc_access ~= "" and oidc_access or ngx.var.oidc_access_fallback
 if oidc_access and oidc_access ~= "" then
     if oidc_access == "deny" then
         ngx.status = 403
@@ -129,6 +129,6 @@ if oidc_access and oidc_access ~= "" then
         ngx.var[name] = claims and claims[claim]
     end
     for name,claim in pairs(cfg["claim_headers"] or {}) do
-        ngx.req.set_header(name, claims and claims[claim])
+        ngx.req.set_header(name, claims and claims[claim] and ngx.escape_uri(claims[claim]))
     end
 end
