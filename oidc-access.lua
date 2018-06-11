@@ -132,6 +132,8 @@ if oidc_access and oidc_access ~= "" then
         ngx.var[name] = claims and claims[claim]
     end
     for name,claim in pairs(cfg["claim_headers"] or {}) do
-        ngx.req.set_header(name, claims and claims[claim] and ngx.escape_uri(claims[claim]))
+        local claim_escape = claim:match("^(.+)%%$")
+        local claim_val = claims and claims[claim_escape or claim]
+        ngx.req.set_header(name, claim_val and claim_escape and ngx.escape_uri(claim_val) or claim_val)
     end
 end
