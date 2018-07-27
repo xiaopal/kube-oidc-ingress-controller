@@ -16,18 +16,7 @@ config_session(){
     [ ! -z "$SESSION_JSON" ] && [ -z "$OIDC_PUBLIC_KEY" ] && OIDC_PUBLIC_KEY="$(jq -r '.public_key//empty' "$SESSION_JSON")"
     [ ! -z "$SESSION_JSON" ] && [ -z "$OIDC_ISSUER" ] && OIDC_ISSUER="$(jq -r '.issuer//empty' "$SESSION_JSON")"
     [ ! -z "$SESSION_JSON" ] && [ -z "$OIDC_DISCOVERY" ] && OIDC_DISCOVERY="$(jq -r '.discovery//empty' "$SESSION_JSON")"
-    [ -z "$OIDC_JWKS_PREFETCH" ] || [ ! -z "$OIDC_PUBLIC_KEY" ] || {
-        OIDC_DISCOVERY="${OIDC_DISCOVERY:-${OIDC_ISSUER:+${OIDC_ISSUER%/}/.well-known/openid-configuration}}"
-        [ ! -z "$OIDC_DISCOVERY" ] || {
-            echo 'OIDC_DISCOVERY required' >&2
-            return 1
-        }
-        local OIDC_DISCOVERY_CACHE="$(curl -sSL "$OIDC_DISCOVERY")" && [ ! -z "$OIDC_DISCOVERY_CACHE" ] || return 1
-        local OIDC_JWKS_URI="$(jq -r '.jwks_uri//empty'<<<"$OIDC_DISCOVERY_CACHE")"
-        # 使用 jwks2pem 工具预先导出为pem格式：openidc_v1.5.4.lua 的 openidc_pem_from_rsa_n_and_e 存在缺陷， 不能将jwks正确导出到pem  
-        [ ! -z "$OIDC_JWKS_URI" ] && OIDC_PUBLIC_KEY="$(curl -sSL "$OIDC_JWKS_URI" | jwks2pem)" && \
-        echo "loaded: $OIDC_JWKS_URI" >&2
-    }
+
     ( export SESSION_NAME SESSION_SECRET \
                 SESSION_REDIS SESSION_REDIS_PREFIX SESSION_REDIS_AUTH \
                 OIDC_CLIENT_ID OIDC_CLIENT_SECRET \
