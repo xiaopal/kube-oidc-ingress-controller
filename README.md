@@ -2,12 +2,17 @@
 
 在nginx-ingress-controller基础上扩展 openid-connect 登录代理功能，支持自动刷新过期的的 id-token (通过刷新 access-token 实现)
 
-Patch 2018-06-17: 负载均衡传入 X-Forwarded-Proto 未同时传入 X-Forwarded-Port 时使用协议默认端口
+- Patch 2018-06-17: 负载均衡传入 X-Forwarded-Proto 未同时传入 X-Forwarded-Port 时使用协议默认端口
+- Patch 2018-08-01: 升级到 nginx-ingress-controller 0.17.1 + lua-resty-openidc v1.6.1
+- Patch 2018-08-01: 支持 Annotations 配置 openidc：ext.ingress.kubernetes.io/oidc-* 
+- Patch 2018-08-01: 支持对Service进行主动健康检查，使用 Annotations 配置：ext.ingress.kubernetes.io/check-http-*
 
 # Docker Image
 ```
-    docker pull xiaopal/oidc-ingress-controller:0.15.0
+    docker pull xiaopal/oidc-ingress-controller:0.17.1
 ```
+
+
 
 # Usage
 
@@ -24,8 +29,7 @@ data:
         "ingress":"k8s.ndp2.netease.com",
         "issuer":"https://login.netease.com/connect",
         "client_id": "9b6d00f6699311e8a4e35cf3fc96a72c",
-        "client_secret": "176efafc250f48999f50b401d01234c29b6d089e699311e8a4e35cf3fc96a72c",
-        "jwks_prefetch": "Y"
+        "client_secret": "176efafc250f48999f50b401d01234c29b6d089e699311e8a4e35cf3fc96a72c"
     }
   grafana.json: | # base64 encode
     {
@@ -100,8 +104,7 @@ kind: Ingress
 metadata:
   name: monitoring-grafana
   annotations:
-    nginx.ingress.kubernetes.io/server-snippet: |
-      set $oidc_access 'grafana';
+    ext.ingress.kubernetes.io/oidc-access: grafana
 spec:
   rules:
   - host: monitor.k8s.example.local
@@ -122,15 +125,15 @@ kind: Ingress
 metadata:
   name: kubernetes-dashboard
   annotations:
-    nginx.ingress.kubernetes.io/server-snippet: |
-      set $oidc_access '{
+    ext.ingress.kubernetes.io/oidc-access: |
+      {
         "name": "kubernetes",
         "id_token_refresh": true, 
         "enc_id_token" : true,
         "claim_headers": { "Authorization": "bearer_enc_id_token" },
         "no_auth_locations": ["/api"],
         "pass_locations": ["/assets","/static","/favicon.ico"]
-        }';
+      }
 spec:
   rules:
   - host: k8s.example.local
@@ -171,6 +174,39 @@ data:
 
 ```
 
+
+# 健康检查 (New)
+```
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: checked-http-backend
+  labels:
+    app: checked-http-backend
+  annotations:
+    ext.ingress.kubernetes.io/check-http-uri: /status
+spec:
+  ports:
+  - port: 80
+
+...
+
+ext.ingress.kubernetes.io/check-http-send="GET /status HTTP/1.0\r\nHost: foo.com\r\n\r\n"
+ext.ingress.kubernetes.io/check-http-expect="[200,201,202,203,204,205,300,301,302,303,304,305]"
+ext.ingress.kubernetes.io/check-http-extras="{
+            interval = 2000,  -- run the check cycle every 2 sec
+            timeout = 1000,   -- 1 sec is the timeout for network operations
+            fall = 3,  -- # of successive failures before turning a peer down
+            rise = 2,  -- # of successive successes before turning a peer up
+            concurrency = 10  -- concurrency level for test requests
+          }"
+
+
+
+```
+
+
 # 更多示例
 ```
 ---
@@ -179,8 +215,8 @@ kind: Ingress
 metadata:
   name: kubernetes-dashboard
   annotations:
-    nginx.ingress.kubernetes.io/server-snippet: |
-      set $oidc_access '{
+    ext.ingress.kubernetes.io/oidc-access: |
+      {
         "issuer": "http://xxxxxxxxxxxxxxxxxx/xxx",
         "client_id": "xxxxxxxxxxxxxxxx", 
         "client_secret" : "xxxxxxxxxxxxxxxxx",
@@ -190,7 +226,7 @@ metadata:
         "logout_redirect": "/",
         "session_redis": "127.0.0.1:6739",
         "session_redis_auth":"Password"
-        }';
+      }
 spec:
   rules:
   - host: xxx.example.local
@@ -206,11 +242,8 @@ kind: Ingress
 metadata:
   name: kubernetes-dashboard-api
   annotations:
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-      set $oidc_access_action 'no-auth';
-      set $oidc_access_extras '{
-        "claim_headers": { "XXXXXX": "xxx" }
-      }';
+    ext.ingress.kubernetes.io/oidc-access-action: no-auth
+    ext.ingress.kubernetes.io/oidc-access-extras: '{"claim_headers": { "XXXXXX": "xxx" } }';
 spec:
   rules:
   - host: k8s.example.local
@@ -227,9 +260,8 @@ metadata:
   name: kubernetes-dashboard-pub
   namespace: kube-system
   annotations:
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-      set $oidc_access '';
-      set $oidc_access_action 'pass';
+    ext.ingress.kubernetes.io/oidc-access: ''
+    ext.ingress.kubernetes.io/oidc-access-action: pass
 spec:
   rules:
   - host: k8s.example.local
