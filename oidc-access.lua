@@ -76,7 +76,7 @@ if oidc_access and oidc_access ~= "" then
 
     local function oidc_access_action()
         local action = ngx.var.oidc_access_action
-        if action then 
+        if action and action ~= "" then 
             -- action aliases
             action = (action == "allow" or action == "ignore" or action == "public") and "pass" or action
             action = (action == "deny" or action == "noauth") and "no-auth" or action
