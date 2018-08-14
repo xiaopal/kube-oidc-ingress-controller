@@ -118,6 +118,8 @@ if oidc_access and oidc_access ~= "" then
             claims["enc_id_token"] = session.data["enc_id_token"]
             claims["bearer_enc_id_token"] = "Bearer " .. session.data["enc_id_token"]
         end
+        local str = require "resty.string"
+        claims["session$id"] = str.to_hex(session.id)
     end
 
     if claims and cfg["enc_id_token"] and not claims["enc_id_token"] then
