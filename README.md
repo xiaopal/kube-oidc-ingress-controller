@@ -28,8 +28,8 @@ data:
     {
         "ingress":"k8s.ndp2.netease.com",
         "issuer":"https://login.netease.com/connect",
-        "client_id": "9b6d00f6699311e8a4e35cf3fc96a72c",
-        "client_secret": "176efafc250f48999f50b401d01234c29b6d089e699311e8a4e35cf3fc96a72c"
+        "client_id": "xxxxxxxxxxxxxxx",
+        "client_secret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
     }
   grafana.json: | # base64 encode
     {
