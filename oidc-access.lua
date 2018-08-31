@@ -104,8 +104,12 @@ if oidc_access and oidc_access ~= "" then
     local res, err, url, session = require("resty.openidc").authenticate(opts, nil, (action == "pass" or action == "no-auth") and "pass", session_opts)
     if err then
         ngx.log(ngx.ERR, err)
-        ngx.status = 500
-        ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+        if cfg["error_redirect"] then
+            ngx.redirect(cfg["error_redirect"])
+        else
+            ngx.status = 500
+            ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+        end
     end
     local claims = res and {}
     if claims then
