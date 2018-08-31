@@ -1,6 +1,6 @@
 local oidc_access = ngx.var.oidc_access
 oidc_access = oidc_access ~= "" and oidc_access or ngx.var.oidc_access_fallback
-if oidc_access and oidc_access ~= "" then
+if oidc_access and oidc_access ~= "" and oidc_access ~= "none" then
     if oidc_access == "deny" then
         ngx.status = 403
         ngx.exit(ngx.HTTP_FORBIDDEN)
