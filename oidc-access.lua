@@ -50,12 +50,13 @@ if oidc_access and oidc_access ~= "" then
         end
     end
     local redis = cfg["session_redis"]
+    local session_name = cfg["session_name"] or (cfg["name"] .. "$session")
     local session_opts = {
-        name       = cfg["name"] .. "$session",
+        name       = session_name,
         secret     = cfg["session_secret"] or cfg["client_secret"],
         storage    = redis and "redis" or "cookie",
 
-        prefix     = cfg["session_redis_prefix"] or ("sessions:" .. cfg["name"]),
+        prefix     = cfg["session_redis_prefix"] or ("sessions:" .. session_name),
         host       = redis and redis:match("([^:]+):%d+") or redis or "127.0.0.1",
         port       = tonumber(redis and redis:match("[^:]+:(%d+)") or 6379),
         auth       = cfg["session_redis_auth"] or nil
