@@ -41,6 +41,10 @@ events {
     use                 epoll;
 }
 
+# Begin-Patch: 引入环境变量
+env EXT_OIDC_CONFIGURATIONS; 
+# End-Patch
+
 http {
     {{ if not $all.DisableLua }}
     lua_package_cpath "/usr/local/lib/lua/?.so;/usr/lib/lua-platform-path/lua/5.1/?.so;;";
@@ -66,8 +70,7 @@ http {
 
         -- Begin-Patch: 初始化配置 
         local cjson = require("cjson")
-        oidc_configurations = cjson.decode(ngx.unescape_uri("{{ getenv "EXT_OIDC_CONFIGURATIONS" | urlquery }}"))
-        
+        oidc_configurations = cjson.decode(os.getenv("EXT_OIDC_CONFIGURATIONS"))
         ext_check_http = {}
         local check_config
         {{ range $name, $upstream := $backends -}}
