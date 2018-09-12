@@ -51,6 +51,12 @@ if oidc_access and oidc_access ~= "" and oidc_access ~= "none" then
     end
     local redis = cfg["session_redis"]
     local session_name = cfg["session_name"] or (cfg["name"] .. "$session")
+
+    local function enabled(val)
+        if val == nil then return nil end
+        return val == true or (val == "1" or val == "true" or val == "on")
+    end
+        
     local session_opts = {
         name       = session_name,
         secret     = cfg["session_secret"] or cfg["client_secret"],
@@ -59,7 +65,19 @@ if oidc_access and oidc_access ~= "" and oidc_access ~= "none" then
         prefix     = cfg["session_redis_prefix"] or ("sessions:" .. session_name),
         host       = redis and redis:match("([^:]+):%d+") or redis or "127.0.0.1",
         port       = tonumber(redis and redis:match("[^:]+:(%d+)") or 6379),
-        auth       = cfg["session_redis_auth"] or nil
+        auth       = cfg["session_redis_auth"] or nil,
+        -- 修复 lua-resty-session 不在每次请求中读取默认值的问题
+        cookie = {
+            persistent = enabled(ngx.var.session_cookie_persistent or false),
+            renew      = tonumber(ngx.var.session_cookie_renew)    or 600,
+            lifetime   = tonumber(ngx.var.session_cookie_lifetime) or 3600,
+            path       = ngx.var.session_cookie_path               or "/",
+            domain     = ngx.var.session_cookie_domain,
+            samesite   = ngx.var.session_cookie_samesite           or "Lax",
+            secure     = enabled(ngx.var.session_cookie_secure),
+            httponly   = enabled(ngx.var.session_cookie_httponly   or true),
+            delimiter  = ngx.var.session_cookie_delimiter          or "|"
+        }        
     }
 
     local request_path = ngx.var.request_uri
