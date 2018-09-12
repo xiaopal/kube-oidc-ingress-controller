@@ -56,7 +56,7 @@ if oidc_access and oidc_access ~= "" and oidc_access ~= "none" then
         if val == nil then return nil end
         return val == true or (val == "1" or val == "true" or val == "on")
     end
-        
+
     local session_opts = {
         name       = session_name,
         secret     = cfg["session_secret"] or cfg["client_secret"],
@@ -119,7 +119,7 @@ if oidc_access and oidc_access ~= "" and oidc_access ~= "none" then
         return "auth"
     end
     local action = oidc_access_action()
-    local res, err, url, session = require("resty.openidc").authenticate(opts, nil, (action == "pass" or action == "no-auth") and "pass", session_opts)
+    local res, err, url, session = require("resty.openidc").authenticate(opts, nil, (action == "pass" or action == "no-auth") and "pass", require("resty.session").start(session_opts))
     if err then
         ngx.log(ngx.ERR, err)
         if cfg["error_redirect"] then
