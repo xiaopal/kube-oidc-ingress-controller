@@ -23,6 +23,6 @@ ADD openidc_v1.6.1-patch.lua /usr/local/lib/lua/resty/openidc.lua
 ADD nginx_0.17.1.tmpl /etc/nginx/template/nginx.tmpl
 ADD nginx-ingress-controller.sh /nginx-ingress-controller
 ADD oidc-access.lua /
-RUN chmod 0755 /nginx-ingress-controller
+RUN chmod 0755 /nginx-ingress-controller && chown -R www-data:www-data /tmp
 
 USER www-data
