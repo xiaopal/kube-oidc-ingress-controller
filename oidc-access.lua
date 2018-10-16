@@ -141,13 +141,54 @@ if oidc_access and oidc_access ~= "" and oidc_access ~= "none" then
             claims["enc_id_token"] = session.data["enc_id_token"]
             claims["bearer_enc_id_token"] = "Bearer " .. session.data["enc_id_token"]
         end
-        local str = require "resty.string"
-        claims["session$id"] = str.to_hex(session.id)
+        claims["session$id"] = require("resty.string").to_hex(session.id)
+        claims["session.id"] = claims["session$id"]
     end
 
     if claims and cfg["enc_id_token"] and not claims["enc_id_token"] then
         claims = nil
     end
+
+    if claims and (cfg["auth_webhook"] or cfg["auth_match"]) then
+
+        local function auth_perform()
+            if session.data["auth$update"] then
+                if not cfg["auth_expires"] then
+                    return session.data["auth$result"]
+                elseif cfg["auth_expires"] and session.data["auth$update"] + cfg["auth_expires"] > ngx.time() then
+                    return session.data["auth$result"]
+                end
+            end
+            local auth = claims[cfg["auth"] or "sub"]
+            if auth and cfg["auth_webhook"] then
+                local httpc = require("resty.http").new()    
+                local res, err = httpc:request_uri(cfg["auth_webhook"], {query={auth=auth}})
+                if res and res.status >= 200 and res.status < 300 then
+                    auth = res.body or "ok"
+                else
+                    if err or res.status < 400 or res.status >= 500 then
+                        ngx.log(ngx.ERR, "failed to request "..cfg["auth_webhook"]..": "..(err or "HTTP "..res.status))
+                    end
+                    return nil
+                end
+            end
+            if auth and cfg["auth_match"] then
+                auth = cfg["auth_match"][auth]
+            end
+            if auth then
+                session.data["auth$result"] = auth
+                session.data["auth$update"] = ngx.time()
+                session:save()
+            end
+            return auth
+        end
+
+        claims["auth"] = auth_perform()
+        if not claims["auth"] then
+            claims = nil
+        end 
+    end
+
     if not claims and (action ~= "pass") then
         ngx.status = 401
         ngx.exit(ngx.HTTP_UNAUTHORIZED)

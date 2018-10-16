@@ -2,10 +2,11 @@
 
 在nginx-ingress-controller基础上扩展 openid-connect 登录代理功能，支持自动刷新过期的的 id-token (通过刷新 access-token 实现)
 
-- Patch 2018-06-17: 负载均衡传入 X-Forwarded-Proto 未同时传入 X-Forwarded-Port 时使用协议默认端口
-- Patch 2018-08-01: 升级到 nginx-ingress-controller 0.17.1 + lua-resty-openidc v1.6.1
-- Patch 2018-08-01: 支持 Annotations 配置 openidc：ext.ingress.kubernetes.io/oidc-* 
-- Patch 2018-08-01: 支持对Service进行主动健康检查，使用 Annotations 配置：ext.ingress.kubernetes.io/check-http-*
+- Update 2018-06-17: 负载均衡传入 X-Forwarded-Proto 未同时传入 X-Forwarded-Port 时使用协议默认端口
+- Update 2018-08-01: 升级到 nginx-ingress-controller 0.17.1 + lua-resty-openidc v1.6.1
+- Update 2018-08-01: 支持 Annotations 配置 openidc：ext.ingress.kubernetes.io/oidc-* 
+- Update 2018-08-01: 支持对Service进行主动健康检查，使用 Annotations 配置：ext.ingress.kubernetes.io/check-http-*
+- Update 2018-10-16: 支持通过白名单和webhook进行访问控制
 
 # Docker Image
 ```
@@ -175,7 +176,7 @@ data:
 ```
 
 
-# 健康检查 (New)
+# 主动健康检查 (New)
 ```
 ---
 apiVersion: v1
@@ -202,6 +203,73 @@ ext.ingress.kubernetes.io/check-http-extras="{
             concurrency = 10  -- concurrency level for test requests
           }"
 
+
+
+```
+
+
+# 访问控制：白名单 (New)
+```
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: example-ac
+  annotations:
+    ext.ingress.kubernetes.io/oidc-access-extras: >
+      {
+        "claim_headers": {
+          "X-WEBAUTH-USER": "sub",
+          "X-WEBAUTH-EMAIL": "email",
+          "X-WEBAUTH-RESULT": "auth",  # sub==xiaopal => X-WEBAUTH-RESULT: admin ,  sub==any-other => HTTP 401
+        },
+        "auth": "sub",
+        "auth_match": {
+          "xiaopal": "admin"
+        },
+        "auth_expires": 600  # session cache expires
+      }
+spec:
+...
+
+```
+
+# 访问控制：webhook (New)
+```
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: example-ac
+  annotations:
+    ext.ingress.kubernetes.io/oidc-access-extras: >
+      {
+        "claim_headers": {
+          "X-WEBAUTH-USER": "sub",
+          "X-WEBAUTH-EMAIL": "email",
+          "X-WEBAUTH-RESULT": "auth", # sub==xiaopal => X-WEBAUTH-RESULT: admin ,  sub==any-other => HTTP 401
+        },
+        "auth": "sub",
+        "auth_webhook": "http://some-service/do-auth",  # GET /do-auth?auth=xiaopal => 200 OK  admin
+        "auth_expires": 600
+      }
+spec:
+
+...
+
+
+    ext.ingress.kubernetes.io/oidc-access-extras: >
+      {
+        "claim_headers": {
+          "X-WEBAUTH-RESULT": "auth", # sub==xiaopal => X-WEBAUTH-RESULT: admin ,  sub==any-other => HTTP 401
+        },
+        "auth": "sub",
+        "auth_webhook": "http://some-service/do-auth",  # GET /do-auth?auth=xiaopal => 200 OK  remote-admin
+        "auth_match": {
+          "remote-admin": "admin"
+        },
+        "auth_expires": 600
+      }
 
 
 ```
